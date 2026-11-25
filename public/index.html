@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAP PI/PO TUT Generator</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-title">SAP PI/PO TUT Generator</span>
+      <span class="brand-sub">Change-specific Technical Unit Testing from the TSD &middot; runs fully offline on this machine</span>
+    </div>
+    <button id="btn-restart" class="btn btn-ghost" type="button" hidden>Start over</button>
+  </header>
+
+  <nav class="steps" id="steps" aria-label="Progress"></nav>
+
+  <main class="container">
+    <div id="alert" class="alert" role="alert" hidden></div>
+
+    <!-- Step 1 -->
+    <section id="step-upload" class="panel">
+      <h2>1. Upload the TSD</h2>
+      <p class="muted">Upload the SAP PI/PO Technical Specification Document (.docx or .pdf). The latest entry of the Revision History is identified automatically and is the change that will be tested.</p>
+      <div class="drop" id="drop">
+        <input id="file" type="file" accept=".docx,.pdf" />
+        <label for="file" class="btn btn-primary">Choose TSD file</label>
+        <span id="file-name" class="muted">No file selected</span>
+      </div>
+      <p class="hint">Maximum 80 MB. The document is processed in memory on this computer and is never sent anywhere else.</p>
+      <div class="actions"><button id="btn-upload" class="btn btn-primary" type="button" disabled>Analyse TSD</button></div>
+    </section>
+
+    <!-- Step 1b -->
+    <section id="step-revision" class="panel" hidden>
+      <h2>Revision History needs your clarification</h2>
+      <div id="rev-issues"></div>
+      <p>Select the entry that is the latest change for this TUT, or enter it manually.</p>
+      <div id="rev-table-wrap" class="table-wrap"></div>
+      <details class="manual">
+        <summary>Enter the change manually instead</summary>
+        <div class="grid2">
+          <label>Revision number<input id="m-number" type="text" maxlength="20"></label>
+          <label>Revision date<input id="m-date" type="text" maxlength="30" placeholder="dd/mm/yyyy"></label>
+        </div>
+        <label>Change description (tested exactly as entered)<textarea id="m-desc" rows="4" maxlength="4000"></textarea></label>
+        <label>Change identifiers <span class="opt">optional</span><input id="m-ids" type="text" maxlength="400" placeholder="e.g. CRF28203, N_11561, ADO 26519505"></label>
+        <div class="actions"><button id="btn-manual" class="btn btn-secondary" type="button">Use this change</button></div>
+      </details>
+    </section>
+
+    <!-- Step 2 -->
+    <section id="step-summary" class="panel" hidden>
+      <h2>2. Change Summary</h2>
+      <p class="muted">Review what was extracted. Everything below comes from the TSD; nothing has been changed. Correct anything that is wrong or missing before you continue.</p>
+      <div id="rev-notes"></div>
+      <div id="summary-body"></div>
+
+      <h3>Corrections <span class="opt">optional</span></h3>
+      <div class="grid2">
+        <label>Source system<input id="c-source" type="text" maxlength="200" placeholder="Leave empty to keep the extracted value"></label>
+        <label>Target system(s)<input id="c-target" type="text" maxlength="200" placeholder="Comma separated"></label>
+      </div>
+      <label>Field / segment name(s) under test <span class="opt">optional</span>
+        <input id="c-fields" type="text" maxlength="600" placeholder="Comma separated. Only fill in if the names above are missing or wrong">
+      </label>
+      <div id="c-nomarker" hidden>
+        <label>What changed, in your words? <span class="opt">recommended &ndash; no change markers were found for this revision</span>
+          <textarea id="c-detail" rows="3" maxlength="2000" placeholder="Describe what changed (for example: field X in mapping Y is now optional, or receiver Z is routed when A = B). This text is used as the test basis and is labelled as tester-provided."></textarea>
+        </label>
+      </div>
+      <label class="check"><input id="c-confirm" type="checkbox"> I have reviewed the Change Summary and confirm that it describes the change to be tested.</label>
+      <div class="actions">
+        <button id="btn-confirm" class="btn btn-primary" type="button" disabled>Confirm and continue</button>
+      </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section id="step-type" class="panel" hidden>
+      <h2>3. TUT type and test information</h2>
+      <div class="cards" role="radiogroup" aria-label="TUT type">
+        <label class="card" id="card-positive">
+          <input type="radio" name="tutType" value="positive">
+          <span class="card-title">A. Positive TUT</span>
+          <span class="card-text">Valid input data and successful processing. Verifies that the changed functionality works as intended, the expected target payload, and successful delivery.</span>
+        </label>
+        <label class="card" id="card-negative">
+          <input type="radio" name="tutType" value="negative">
+          <span class="card-title">B. Negative TUT</span>
+          <span class="card-text">Invalid, missing or unexpected input that is relevant to the change. Verifies the expected handling and monitoring evidence. A rejection or non-routing is not always a failed message.</span>
+        </label>
+      </div>
+
+      <h3>Additional information</h3>
+      <p class="hint">Only what the TSD cannot provide is needed. Everything here is optional.</p>
+      <div id="needed-sys" class="grid2"></div>
+      <div class="grid2">
+        <label>SAP PO environment <span class="opt">optional</span>
+          <select id="i-env"><option value="">Not specified</option><option>DEV</option><option>QAS</option><option>UAT</option><option>PRD</option><option>OTHER</option></select>
+        </label>
+      </div>
+      <label>Test scenario description / extra context <span class="opt">optional</span><textarea id="i-scenario" rows="3" maxlength="2000"></textarea></label>
+      <label>Expected behaviour (only if the TSD does not state it) <span class="opt">optional</span><textarea id="i-expected" rows="3" maxlength="2000"></textarea></label>
+      <label>Sample payload / test data <span class="opt">optional</span><textarea id="i-payload" rows="5" maxlength="20000" class="mono" spellcheck="false"></textarea></label>
+      <label>Specific conditions or assumptions <span class="opt">optional</span><textarea id="i-assume" rows="3" maxlength="2000"></textarea></label>
+      <div class="actions">
+        <button id="btn-generate" class="btn btn-primary" type="button" disabled>Generate TUT preview</button>
+      </div>
+    </section>
+
+    <!-- Step 4 -->
+    <section id="step-preview" class="panel" hidden>
+      <h2>4. Validation and preview</h2>
+      <p class="muted">The Word document is only available after you review this preview and approve it.</p>
+      <div id="validation"></div>
+      <div id="flags"></div>
+      <h3>Test cases</h3>
+      <div id="cases"></div>
+      <label class="check"><input id="p-approve" type="checkbox"> I have reviewed the preview and the items marked &ldquo;Needs confirmation&rdquo;, and I approve generating the Word document.</label>
+      <div class="actions">
+        <button id="btn-back" class="btn btn-secondary" type="button">Back to test information</button>
+        <button id="btn-download" class="btn btn-primary" type="button" disabled>Download Word document (.docx)</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="busy" class="busy" hidden><div class="spinner"></div><div id="busy-text">Working&hellip;</div></div>
+  <script src="/app.js"></script>
+</body>
+</html>
